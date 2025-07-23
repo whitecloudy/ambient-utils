@@ -1,11 +1,10 @@
 from .noise import *
 from .utils import *
 from .loss import *
-from .geom import *
 from .dist import *
 from .url import *
 from .eval import *
-# from .diffusers import *
+from .diffusers import *
 from .dataset import *
 
 # add also aliases, e.g. ambient_utils.diffusers_utils should be a thing. This ensures backward compatibility.

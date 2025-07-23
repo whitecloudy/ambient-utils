@@ -5,14 +5,14 @@ def main():
     ambient.save_image(image[0], "example_image_loaded.jpg")
 
 
-    # ambient.save_image(ambient.apply_blur(image, 1.0)[0], "example_image_blurred.jpg")
-    # ambient.save_image(ambient.apply_mask(image, 0.1)[0], "example_image_masked.jpg")
-    # ambient.save_image(ambient.apply_jpeg_compression(image, 40)[0], "example_image_jpeg_compressed.jpg")
-    # ambient.save_image(ambient.apply_motion_blur(image, 4.0, 0.0)[0], "example_image_motion_blurred.jpg")
-    # ambient.save_image(ambient.apply_pixelate(image, 48)[0], "example_image_pixelated.jpg")
-    # ambient.save_image(ambient.apply_saturation(image, 2.0)[0], "example_image_oversaturated.jpg")
-    # ambient.save_image(ambient.apply_saturation(image, 0.4)[0], "example_image_undersaturated.jpg")
-    # ambient.save_image(ambient.apply_color_shift(image, 20)[0], "example_image_color_shifted.jpg")
+    ambient.save_image(ambient.apply_blur(image, 1.0)[0], "example_image_blurred.jpg")
+    ambient.save_image(ambient.apply_mask(image, 0.1)[0], "example_image_masked.jpg")
+    ambient.save_image(ambient.apply_jpeg_compression(image, 40)[0], "example_image_jpeg_compressed.jpg")
+    ambient.save_image(ambient.apply_motion_blur(image, 4.0, 0.0)[0], "example_image_motion_blurred.jpg")
+    ambient.save_image(ambient.apply_pixelate(image, 48)[0], "example_image_pixelated.jpg")
+    ambient.save_image(ambient.apply_saturation(image, 2.0)[0], "example_image_oversaturated.jpg")
+    ambient.save_image(ambient.apply_saturation(image, 0.4)[0], "example_image_undersaturated.jpg")
+    ambient.save_image(ambient.apply_color_shift(image, 20)[0], "example_image_color_shifted.jpg")
 
     ambient.save_image(ambient.apply_imagecorruptions(image, "gaussian_noise", 5)[0], "example_image_gaussian_noise.jpg")
     ambient.save_image(ambient.apply_imagecorruptions(image, "shot_noise", 5)[0], "example_image_shot_noise.jpg")

@@ -34,10 +34,6 @@ from typing import Any, Optional, Tuple, Union
 import logging
 
 
-
-#----------------------------------------------------------------------------
-# Abstract base class for datasets.
-
 class EasyDict(dict):
     """Convenience class that behaves like a dict but allows access with the attribute syntax."""
 
@@ -53,6 +49,8 @@ class EasyDict(dict):
     def __delattr__(self, name: str) -> None:
         del self[name]
 
+#----------------------------------------------------------------------------
+# Abstract base class for datasets.
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self,
@@ -82,6 +80,8 @@ class Dataset(torch.utils.data.Dataset):
         if (max_size is not None) and (self._raw_idx.size > max_size):
             np.random.RandomState(random_seed % (1 << 31)).shuffle(self._raw_idx)
             self._raw_idx = np.sort(self._raw_idx[:max_size])
+        
+        self.annotations = {}  # {filename: (sigma_min, sigma_max), ...}
 
         
     def _get_raw_labels(self):
@@ -239,6 +239,70 @@ class Dataset(torch.utils.data.Dataset):
     @property
     def has_onehot_labels(self):
         return self._get_raw_labels().dtype == np.int64
+
+
+
+class AmbientSampler(torch.utils.data.Sampler):
+    def __init__(self, dataset, scheduler, rank=0, num_replicas=1, shuffle=True, seed=0, window_size=0.5, s_max=None, infinite=False):
+        assert len(dataset) > 0
+        assert num_replicas > 0
+        assert 0 <= rank < num_replicas
+        assert 0 <= window_size <= 1
+        super().__init__(dataset)
+        self.dataset = dataset
+        self.scheduler = scheduler
+        self.rank = rank
+        self.num_replicas = num_replicas
+        self.shuffle = shuffle
+        self.seed = seed
+        self.window_size = window_size
+
+        self.sampled_sigmas = {}
+        self.buffer_factor = (1 + 1/(s_max - 1))**0.5 if s_max is not None else 1
+
+        self.infinite = infinite
+
+    def __iter__(self):
+
+        order = np.arange(len(self.dataset))
+        rnd = None
+        window = 0
+        if self.shuffle:
+            # this ensures consistent shuffle among the processes.
+            rnd = np.random.RandomState(self.seed)
+            rnd.shuffle(order)
+            # create a local window for dynamic shuffling within the window.
+            window = int(np.rint(order.size * self.window_size))
+        
+        idx = 0
+        sigma = self.scheduler()  # sample a sigma from the scheduler
+        number_of_yields = 0
+        while True:
+            i = idx % order.size
+            if idx % self.num_replicas == self.rank:                
+                if hasattr(self.dataset, "annotations"):
+                    sample_annotation = self.dataset.annotations.get(order[i], (0.0, 300.0))  # get sigma_min and sigma_max for the image
+                else:
+                    sample_annotation = (0.0, 300.0)
+                sample_sigma_min = sample_annotation[0]
+                sample_sigma_max = sample_annotation[1]
+
+                if (sigma > sample_sigma_min*self.buffer_factor) or (sigma < sample_sigma_max):
+                    self.sampled_sigmas[order[i]] = sigma
+                    yield order[i]
+                    number_of_yields += 1
+                    sigma = self.scheduler()
+
+            if window >= 2:
+                # if dynamic shuffling is enabled, then global order can change and the indices that are
+                # getting assigned to each GPU can change as well.
+                j = (i - rnd.randint(window)) % order.size
+                order[i], order[j] = order[j], order[i]
+            idx += 1
+
+            if not self.infinite and number_of_yields >= order.size:
+                break
+
 
 #----------------------------------------------------------------------------
 # Dataset subclass that loads images recursively from the specified directory
