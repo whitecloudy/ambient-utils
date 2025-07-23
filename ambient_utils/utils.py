@@ -2,13 +2,9 @@ import torch
 import numpy as np
 import PIL
 import PIL.Image
-import PIL.ImageDraw
-import PIL.ImageFont
 import torchvision.transforms as transforms
-import wandb
 import math
 import os
-import s3fs
 from typing import Any
 
 def get_rel_methods(obj, keyword):
@@ -24,9 +20,10 @@ def broadcast_batch_tensor(batch_tensor):
 
 def ambient_sqrt(x):
     """
-        Computes the square root of x if x is positive, and 1 otherwise.
+        Computes the square root of x if x is positive. If not, it returns 1.
     """
     return torch.where(x < 0, torch.ones_like(x), x.sqrt())
+
 
 def load_image(image_obj, device='cuda', resolution=None):
     if type(image_obj) == str:
@@ -48,7 +45,7 @@ def load_image(image_obj, device='cuda', resolution=None):
     return torch.unsqueeze(tensor_image, 0).to(device)
 
 def save_image(images, image_path, save_wandb=False, down_factor=None, wandb_down_factor=None, 
-               caption=None, font_size=40, text_color=(255, 255, 255), image_type="RGB"):
+               image_type="RGB"):
     image_np = (images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(1, 2, 0).cpu().numpy()
     if image_np.shape[2] == 1:
         pil_image = PIL.Image.fromarray(image_np[:, :, 0], 'L')
@@ -57,14 +54,10 @@ def save_image(images, image_path, save_wandb=False, down_factor=None, wandb_dow
     if down_factor is not None:
         pil_image = pil_image.resize((pil_image.size[0] // down_factor, pil_image.size[1] // down_factor))
     
-    if caption is not None:
-        draw = PIL.ImageDraw.Draw(pil_image)
-        # use LaTeX bold font
-        font = PIL.ImageFont.truetype("cmr10.ttf", font_size)
-        # make bold
-        draw.text((0, 0), caption, text_color, font=font)
-
     pil_image.save(image_path)
+    
+    if save_wandb:
+        import wandb
 
     if save_wandb and wandb.run is not None:
         if wandb_down_factor is not None:
@@ -86,14 +79,7 @@ def find_closest_factors(number):
     return m, n
 
 
-def image_to_numpy(image):
-    return (image * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(1, 2, 0).cpu().numpy()
-
-def image_from_numpy(image):
-    return torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).to(torch.float32) / 127.5 - 1
-
-def save_images(images, image_path, num_rows=None, num_cols=None, save_wandb=False, down_factor=None, wandb_down_factor=None, 
-                captions=None, font_size=40, text_color=(255, 255, 255), draw_horizontal_arrow=False, draw_vertical_arrow=False):
+def save_images(images, image_path, num_rows=None, num_cols=None, save_wandb=False, down_factor=None, wandb_down_factor=None):
     if num_rows is None and num_cols is None:
         num_rows = int(np.sqrt(images.shape[0]))    
         num_cols = int(np.ceil(images.shape[0] / num_rows))
@@ -113,32 +99,20 @@ def save_images(images, image_path, num_rows=None, num_cols=None, save_wandb=Fal
             index = i * num_cols + j
             img = PIL.Image.fromarray(image_np[index])
             grid_image.paste(img, (j * image_size, i * image_size))
-            if captions is not None:
-                draw = PIL.ImageDraw.Draw(grid_image)
-                # use LaTeX bold font
-                font = PIL.ImageFont.truetype("cmr10.ttf", font_size)
-                draw.text((j * image_size, i * image_size), captions[index], text_color, font=font)
+
     if down_factor is not None:
         grid_image = grid_image.resize((grid_image.size[0] // down_factor, grid_image.size[1] // down_factor))
     
-    if draw_horizontal_arrow:
-        draw = PIL.ImageDraw.Draw(grid_image)
-        # draw it on the top of the image
-        draw.line((0, 0, grid_image.size[0], 0), fill=(255, 0, 0), width=5)
-
-    if draw_vertical_arrow:
-        draw = PIL.ImageDraw.Draw(grid_image)
-        # draw it on the left of the image
-        draw.line((0, 0, 0, grid_image.size[1]), fill=(255, 0, 0), width=5)
-
     grid_image.save(image_path)
+
+    if save_wandb:
+        import wandb
 
     if save_wandb and wandb.run is not None:
         if wandb_down_factor is not None:
             # resize for speed
             grid_image = grid_image.resize((grid_image.size[0] // wandb_down_factor, grid_image.size[1] // wandb_down_factor))
         wandb.log({"images/" + image_path.split("/")[-1]: wandb.Image(grid_image)})
-
 
 
 
@@ -156,53 +130,8 @@ def tile_image(batch_image, n, m=None):
 _dnnlib_cache_dir = None
 
 
-
-
-
-def create_video_from_frames(frames, video_path, fps=25):
-    """
-        Creates a video from frames.
-        Args:
-            frames: (batch_size, num_frames, num_channels, height, width)
-            video_path: path to save the video
-            fps: frames per second
-    """
-    def _create_video_from_frames(frames, video_path, fps=25):
-        frames = (frames * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
-        imageio.mimwrite(video_path, frames, fps=fps)
-    batch_size = frames.shape[0]
-    tiled_frames = [tile_image(frame, n=batch_size, m=1) for frame in frames.permute(1, 0, 2, 3, 4)]
-    tiled_frames = torch.stack(tiled_frames, dim=0)
-    _create_video_from_frames(tiled_frames, video_path, fps=fps)
-
-
-
-
-    
-
-def color_image_border(images, color_mask, border_thickness=5):
-    """
-        Colors the border of the image for which color_mask is True with the given color.
-        Args:
-            images: (batch_size, num_channels, height, width)
-            color_mask: (batch_size,)
-        Returns:
-            colored_images: (batch_size, num_channels, height, width)
-    """
-    assert images.shape[0] == color_mask.shape[0]
-    height = images.shape[2]
-    width = images.shape[3]
-    colored_images = images.clone()
-    
-    expanded_color_mask = 1 - color_mask[:, None, None, None].to(images.device)
-    colored_images[:, 0, :border_thickness, :] = expanded_color_mask[:, 0, :border_thickness, :] * colored_images[:, 0, :border_thickness, :] + (1 - expanded_color_mask[:, 0, :border_thickness, :]) * 1
-    colored_images[:, 0, height - border_thickness - 1:, :] = expanded_color_mask[:, 0] * colored_images[:, 0, height - border_thickness - 1:, :] + (1 - expanded_color_mask[:, 0]) * 1
-    colored_images[:, 0, :, :border_thickness] = expanded_color_mask[:, 0, :, :border_thickness] * colored_images[:, 0, :, :border_thickness] + (1 - expanded_color_mask[:, 0, :, :border_thickness]) * 1
-    colored_images[:, 0, :, width - border_thickness - 1:] = expanded_color_mask[:, 0] * colored_images[:, 0, :, width - border_thickness - 1:] + (1 - expanded_color_mask[:, 0]) * 1
-    return colored_images
-
-
 def stylize_plots():
+    import seaborn as sns
     sns.set(style="whitegrid")
 
 
@@ -242,6 +171,7 @@ def is_file(filename):
     if not filename.startswith('s3://'):
         return os.path.isfile(filename)
     else:
+        import s3fs
         s3 = s3fs.S3FileSystem(anon=False)
         return s3.isfile(filename)
 
@@ -307,3 +237,10 @@ def bucketize(values, num_buckets):
     bucket_values = torch.linspace(min_value, max_value, num_buckets + 1, device=values.device)
     bucket_indices = torch.bucketize(values, bucket_values)
     return bucket_indices
+
+
+def image_to_numpy(image):
+    return (image * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(1, 2, 0).cpu().numpy()
+
+def image_from_numpy(image):
+    return torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).to(torch.float32) / 127.5 - 1

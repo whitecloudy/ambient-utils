@@ -1,15 +1,18 @@
+"""This module contains functions for interoperating with the Diffusers library."""
 import torch
-from datasets import Dataset
 from torchvision import transforms
 import PIL
 import inspect
 from typing import List, Optional, Union
-import copy
-from diffusers.training_utils import EMAModel
-from diffusers import UNet2DConditionModel
-from diffusers import AutoencoderKL
-from diffusers import StableDiffusionXLPipeline
-from diffusers import EulerDiscreteScheduler
+try:
+    from diffusers.training_utils import EMAModel
+    from diffusers import UNet2DConditionModel
+    from diffusers import AutoencoderKL
+    from diffusers import StableDiffusionXLPipeline
+    from diffusers import EulerDiscreteScheduler
+except ImportError:
+    print("Diffusers library not found.")
+
 import numpy as np
 
 # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.retrieve_timesteps
@@ -64,8 +67,6 @@ def timesteps_to_sigma(timesteps, alphas_cumprod):
     sqrt_one_minus_alpha_prod = (1 - alphas_cumprod[timesteps]) ** 0.5
     sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod.flatten()
     return sqrt_one_minus_alpha_prod
-
-
 
 
 def keep_subset_from_dataset(dataset, max_size):

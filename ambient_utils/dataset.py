@@ -5,7 +5,7 @@ import zipfile
 import PIL.Image
 import json
 import torch
-from typing import Any, List, Union, Callable
+from typing import Any, Union
 try:
     import pyspng
 except ImportError:
@@ -13,32 +13,25 @@ except ImportError:
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-import torchvision
-import torchvision.transforms.functional as TF
 import webdataset as wds
-from torch.utils.data import default_collate
 from braceexpand import braceexpand
 import math
 import random
-from torchvision import transforms
 from webdataset.tariterators import (
     base_plus_ext,
     tar_file_expander,
     url_opener,
     valid_sample,
 )
-from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler, IterableDataset, get_worker_info
+from torch.utils.data import Dataset, IterableDataset, get_worker_info
 import sys
 from multiprocessing import Value
-from ambient_utils.utils import save_images, save_image
 
-from torchvision.transforms import Normalize, Compose, RandomResizedCrop, InterpolationMode, ToTensor, Resize, \
-    CenterCrop, ColorJitter, Grayscale
+from torchvision.transforms import Normalize, Compose, InterpolationMode, ToTensor, Resize, \
+    CenterCrop
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 import logging
-import open_clip
 
 
 
@@ -786,6 +779,7 @@ def get_wds_dataset(input_shards, batch_size, is_train=False,
 
 
 def clip_annotate_wds(label_texts=None):
+    import open_clip
     clip_model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
     clip_model.eval()
     tokenizer = open_clip.get_tokenizer('ViT-B-32')
@@ -820,72 +814,11 @@ def clip_annotate_wds(label_texts=None):
     return lambda x: annotate_fn(x, text_features)
 
 
-
-
 def concat_shards_in_path(shards_path):
     shards = glob.glob(os.path.join(shards_path, "*.tar"))
     shards = [os.path.join(shards_path, shard) for shard in shards]
     return "::".join(shards)
 
+
 if __name__ == "__main__":
-
-    BATCH_SIZE = 256
-    NUM_SAMPLES = 10000
-    SEED = 42
-    WORKERS = 256
-    K = 5
-    BEST = True
-
-    # demonstration of how to use the webdataset dataloader
-    shards = concat_shards_in_path(os.environ.get("DATACOMP_SMALL", "./"))
-    # annotate_fn = clip_annotate_wds(["low-quality image", "high-quality image"])
-    annotate_fn = clip_annotate_wds()
-
-    dataloader = get_wds_dataset(shards, batch_size=BATCH_SIZE, is_train=True, epoch=0, 
-                                 floor=False, num_samples=NUM_SAMPLES, seed=SEED,
-                                 # annotation params
-                                 annotate_fn=annotate_fn, annotation_keys=["clip_text_probs", "inner_products"],
-                                 # hardware params
-                                 workers=WORKERS, world_size=1)
-    image, text, original_dims, text_probs, inner_products = next(iter(dataloader))
-    save_images(image * 2 - 1, "test_webdataset.png")
-
-
-    # get top-K images
-    sorted_indices = inner_products.squeeze(1, 2).argsort(dim=0)
-    sorted_indices = sorted_indices[:K] if BEST else sorted_indices[-K:]
-    top_K_images = image[sorted_indices].squeeze(1)
-    top_K_texts = [text[i] for i in sorted_indices]
-    save_images(top_K_images * 2 - 1, "test_top_K_images.png")
-    import pdb; pdb.set_trace()
-    # # demonstration of how to use the synthetically corrupted image folder dataset
-
-    # corruptions_dict = {
-    #     "blur": {
-    #         "sigma": lambda: np.random.uniform(0.5, 8.0)
-    #     },
-    #     "mask": {
-    #         "masking_probability": lambda: np.random.uniform(0.05, 0.9)
-    #     },
-    #     "pixelate": {
-    #         "pixel_size": lambda: np.random.randint(10, 200)
-    #     },
-    #     "saturation": {
-    #             # Start of Selection
-    #             "saturation_level": lambda: np.random.uniform(0.8, 0.9) if np.random.rand() < 0.5 else np.random.uniform(1.1, 1.2)
-    #     },
-    #     "color_shift": {
-    #         "shift": lambda: np.random.uniform(-0.1, -0.05, size=3) if np.random.rand() < 0.5 else np.random.uniform(0.05, 0.1, size=3)
-    #     },
-    #     "imagecorruptions": {
-    #         "severity": lambda: np.random.randint(1, 5),
-    #         # "corruption_name": lambda: np.random.choice(["jpeg_compression"])
-    #         "corruption_name": lambda: np.random.choice(["gaussian_noise", "shot_noise", "impulse_noise", "defocus_blur", "motion_blur", "zoom_blur", "snow", "frost", "brightness", "contrast", "elastic_transform", "jpeg_compression"])
-    #     }
-    # }
-    # # TODO(@giannisdaras): de-anonymize this path
-    # dataset = SyntheticallyCorruptedImageFolderDataset(path="/scratch/07362/gdaras/datasets/ffhq-256x256_train_split", 
-    #                                                     corruption_probability=1.0, 
-    #                                                     corruptions_dict=corruptions_dict)
-    # dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
-    # save_images(next(iter(dataloader))["image"] * 2 - 1, "test_synthetically_corrupted.png")
+    pass

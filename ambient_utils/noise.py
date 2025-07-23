@@ -1,10 +1,10 @@
+"""This module contains functions for artificially corrupting images in different ways."""
 import torch
 from ambient_utils.utils import broadcast_batch_tensor, ambient_sqrt, load_image, image_to_numpy, image_from_numpy, ensure_tensor, ensure_dimensions
-from scipy.ndimage import gaussian_filter
 import PIL
 import tempfile
 import numpy as np
-import imagecorruptions
+
 
 def add_extra_noise_from_vp_to_vp(noisy_input, current_sigma, desired_sigma):
     """
@@ -113,6 +113,7 @@ def get_box_mask_that_fits(image_shape, survival_probability, device='cuda'):
 @ensure_tensor
 @ensure_dimensions
 def apply_blur(image, sigma):
+    from scipy.ndimage import gaussian_filter
     device = image.device
     return torch.tensor(gaussian_filter(image[0].cpu(), sigma=(0, sigma, sigma))).to(device).unsqueeze(0)
 
@@ -185,6 +186,7 @@ def apply_color_shift(image, shift):
 @ensure_dimensions
 def apply_imagecorruptions(image, corruption_name, severity):
     # names: ['gaussian_noise', 'shot_noise', 'impulse_noise', 'defocus_blur', 'glass_blur', 'motion_blur', 'zoom_blur', 'snow', 'frost', 'fog', 'brightness', 'contrast', 'elastic_transform', 'pixelate', 'jpeg_compression']
+    import imagecorruptions
     device = image.device
     image = image.cpu()
     image = image_to_numpy(image[0])

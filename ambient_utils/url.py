@@ -6,7 +6,6 @@ import urllib.request
 import uuid
 from typing import Any
 import requests
-import s3fs
 import os
 import tempfile
 import glob
@@ -38,6 +37,7 @@ def open_url(url: str, cache_dir: str = None, num_attempts: int = 10, verbose: b
 
     # check it is an s3 path    
     if url.startswith('s3://'):
+        import s3fs
         s3 = s3fs.S3FileSystem(anon=False)
         return s3.open(url, read_mode)
 

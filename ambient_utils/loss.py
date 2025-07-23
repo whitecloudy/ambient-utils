@@ -30,7 +30,6 @@ def from_x0_pred_to_noise_pred_vp(noisy_input, x0_pred, sigma):
     sigma = broadcast_batch_tensor(sigma)
     return (noisy_input - x0_pred * torch.sqrt(1 - sigma ** 2)) / sigma
 
-
 def from_x0_pred_to_xnature_pred_vp_to_vp(x0_pred, noisy_input, current_sigma, desired_sigma):
     current_sigma, desired_sigma = [broadcast_batch_tensor(x) for x in [current_sigma, desired_sigma]]
     scaling_coeff = ambient_sqrt((1 - desired_sigma**2) / (1 - current_sigma ** 2))
