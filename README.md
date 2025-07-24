@@ -6,7 +6,22 @@
   <img src="https://github.com/giannisdaras/ambient-utils/blob/main/examples/example_image.jpg?raw=true" width="60%" alt="Ambient Omni Logo" />
 </div>
 
-## What is this about?
+## Package installation 👨‍💻
+
+You can install this package by simply running:
+
+```bash
+pip install ambient-utils
+```
+
+If you plan to use all the functionalities of the library, you can use:
+```bash
+pip install ambient-utils[all]
+```
+but be aware that your installation will take a bit longer. For most use cases, just `pip install ambient-utils` should suffice.
+
+
+## What is this about 🤨?
 
 This repository hosts useful functions for training diffusion models (or flow matching models) in settings with limited access to high-quality data.
 This repository provides the implementation of ideas around leveraging imperfect data sources, including low-quality, corrupted, synthetic, and out-of-distribution samples, to improve generalization without degrading sample quality. This problem appears in numerous scientific and practical applications. 
@@ -25,7 +40,7 @@ The code in this repository has been used in the following papers:
 Beyond the functionality directly related to training diffusion models with corrupted data, this repository also provides a wide range of functions that can be useful for day-to-day deep learning projects. 
 
 
-## What's a good place to start?
+## What's a good place to start learning 📖?
 
 If you are not familiar with the Ambient Diffusion family of papers, probably the best place to start is our [Ambient Diffusion Omni](https://arxiv.org/abs/2506.10038) work, as it contains the most polished versions of the ideas that we developed over the years.
 
@@ -37,7 +52,7 @@ If you are too lazy to do that, here is a TLDR.
 
 
 
-## How to use this framework in my codebase?
+## How to use this framework in my codebase? ✨
 
 
 It is pretty straightforward to use ideas for learning with bad data, add and integrate them into your existing standard diffusion codebase.
@@ -151,7 +166,7 @@ loss = ambient_weight[:, None, None, None] * ((image_tn_pred - image_tn) ** 2)
 ```
 
 
-## How is this repository structured?
+## How is this repository structured? 📝
 
 * `datasets`: provides the `AmbientSampler`, a `torch.utils.data.Sampler` that allows for sampling different datapoints differently according to the strength of the corruption. This module also provides several utilities for working with ImageFolder datasets and WebDatasets.
 * `classifier`: related to the [Ambient Diffusion Omni](https://arxiv.org/abs/2506.10038) work. Useful for parallel predictions and annotations using a pre-trained noise-dependent classifier.
