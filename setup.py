@@ -11,7 +11,7 @@ with open(root / "requirements.txt", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="ambient_utils",
-    version="1.0.0",
+    version="1.0.1",
     author="giannisdaras",
     author_email="daras.giannhs@gmail.com",
     description="Utility functions for learning generative models from corrupted data.",
