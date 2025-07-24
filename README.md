@@ -42,7 +42,7 @@ Beyond the functionality directly related to training diffusion models with corr
 
 ## What's a good place to start learning 📖?
 
-If you are not familiar with the Ambient Diffusion family of papers, probably the best place to start is our [Ambient Diffusion Omni](https://arxiv.org/abs/2506.10038) work, as it contains the most polished versions of the ideas that we developed over the years.
+If you are not familiar with the Ambient Diffusion family of papers, probably the best place to start is our [Ambient Diffusion Omni](https://arxiv.org/abs/2506.10038) work, as it contains the most polished versions of the ideas that we have developed over the years.
 
 If you are too lazy to do so, you can check out [this blogpost](https://giannisdaras.github.io/publication/ambient_omni) instead. 
 
@@ -55,16 +55,16 @@ If you are too lazy to do that, here is a TLDR.
 ## How to use this framework in my codebase? ✨
 
 
-It is pretty straightforward to use ideas for learning with bad data, add and integrate them into your existing standard diffusion codebase.
+It is pretty straightforward to use ideas for learning with bad data, add, and integrate them into your existing standard diffusion codebase.
 A standalone example is provided in the [`examples/test_ambient.py`](https://github.com/giannisdaras/ambient-utils/blob/main/examples/test_ambient.py) file.
 Give or take, you will need to do 4 things.
 
 ### 1. Prepare your data
 
-As mentioned before, each sample in your data will only help you learn for a subset of the diffusion times. Typically, a sample can be used only under high noise (typically a low-quality sample) or under very low noise (typically high-quality but out-of-distribution sample). 
-We use `sigma_min` and `sigma_max` to indicate the allowed times. In particular, a sample can be used for all times t: $\sigma_t > \sigma_{\mathrm{min}} \ \vee \sigma_t < \sigma_{\mathrm{max}}$. These parameters can be exposed per sample using heuristics or domain knowledge. If you want a more principled way for selecting this per sample, see the [Ambient Omni paper](https://arxiv.org/abs/2506.10038).
+As mentioned before, each sample in your data will only help you learn for a subset of the diffusion times. Typically, an imperfect sample can be used only under high noise (typically a low-quality sample) or under very low noise (typically high-quality but out-of-distribution sample). 
+We use `sigma_min` and `sigma_max` to indicate the allowed times. In particular, a sample can be used for all times t: $\sigma_t > \sigma_{\mathrm{min}} \ \vee \sigma_t < \sigma_{\mathrm{max}}$. These parameters can be determined per sample using heuristics or domain knowledge. If you want a more principled way for selecting this, see the [Ambient Omni paper](https://arxiv.org/abs/2506.10038).
 
-You need to modify your existing `torch.utils.data.Dataset` to expose these two arguments. Our code expects the `dataset.annotations` property to be set. This should be a dictionary that maps the dataset index (integer) to a tuple (sigma_min, sigma_max). If this dictionary is not set, our code assumes that all samples can be used at any diffusion time (default behavior in other codebases).
+You need to modify your existing `torch.utils.data.Dataset` to expose these two arguments. Our code expects the `dataset.annotations` property to be set. This should be a dictionary that maps the dataset `index` (integer) to a tuple `(sigma_min, sigma_max)`. If this dictionary is not set, our code assumes that all samples can be used at any diffusion time (default behavior in other codebases).
 
 Here is some dummy code for setting the annotations:
 
@@ -86,12 +86,12 @@ for i in range(len(dataset)):
     dataset.annotations[i] = sample_annotation
 ```
 
-It is further recommended to store a fixed noise for each sample in the dataset. The reasons for this will become clear in a bit. This can either be done by literally storing the noise array or by generating on the fly the noise based on a fixed per-image seed, such as the dataset index. The [`ambient_utils.dataset.Dataset`](https://github.com/giannisdaras/ambient-utils/blob/main/ambient_utils/dataset.py#L55) class already takes care of this functionality for you. But if you are working with a different `torch.utils.data.Dataset`, you have to implement this yourself.
+It is further recommended to store a fixed noise for each sample in the dataset. The reasons for this will become clear in a bit. This can either be done by literally storing the noise array or by generating it on the fly with a fixed per-image seed, such as the dataset index. The [`ambient_utils.dataset.Dataset`](https://github.com/giannisdaras/ambient-utils/blob/main/ambient_utils/dataset.py#L55) class already takes care of this functionality for you. But if you are working with a different `torch.utils.data.Dataset`, you have to implement this yourself.
 
 
 ### 2. Use the `AmbientSampler`
 
-As mentioned, each sample can only be used for a subset of the diffusion times. This means that the standard way of first sampling a datapoint and then diffusion times no longer works, as we may get inadmissible pairs. Instead, we need to change the order: first sample a noise level $\sigma_t$, and then select from the pool of samples that can be used in that time, i.e. choose a sample for which $\sigma_{min} < \sigma_t$ or $\sigma_{max} > \sigma_t$. To make this easier, we have provided the class [`AmbientSampler`](https://github.com/giannisdaras/ambient-utils/blob/main/ambient_utils/dataset.py#L245) that takes care of this for you. 
+As mentioned, each imperfect sample can only be used for a subset of the diffusion times. This means that the standard way of first sampling a datapoint and then diffusion times no longer works, as we may get inadmissible pairs. Instead, we need to change the order: first sample a noise level $\sigma_t$, and then select from the pool of samples that can be used in that time, i.e. choose a sample for which $\sigma_{min} < \sigma_t$ or $\sigma_{max} > \sigma_t$. To make this easier, we have provided the class [`AmbientSampler`](https://github.com/giannisdaras/ambient-utils/blob/main/ambient_utils/dataset.py#L245) that takes care of this for you. 
 
 Here is a very easy example on how to use this: 
 
@@ -133,7 +133,8 @@ In any case, you can easily do this corruption by using the following code:
 sigma_tn = torch.tensor([sampler.sampled_sigmas[i.item()]['sigma_min'] for i in batch['idx']])
 sigma_t = torch.tensor([sampler.sampled_sigmas[i.item()]['sigma'] for i in batch['idx']])
 sigma_tn = torch.where(sigma_tn > sigma_t, torch.zeros_like(sigma_tn), sigma_tn) # make sure we ground truth version we have for the sample is at less noise.
-image_tn = batch['image'] + batch.get('noise', torch.zeros_like(batch['image'])) * sigma_tn[:, None, None, None] # corrupt the image to the noise level that we can trust them.
+image_tn = batch['image'] + batch.get('noise', torch.zeros_like(batch['image'])) * sigma_tn[:, None, None, None] # corrupt the image to the noise level that we can trust them with saved noise.
+#On-the-fly noise: image_tn = batch['image'] + torch.stack([torch.randn_like(x, generator=torch.Generator().manual_seed(i)) for i,x in zip(batch['idx'], batch['image'])]) # Can also generate on-the-fly using per-image-seed
 image_t = image_tn + torch.randn_like(batch['image']) * torch.sqrt(sigma_t[:, None, None, None] ** 2 - sigma_tn[:, None, None, None] ** 2) # add noise to the image to the noise level that we want to do the training for.
 ```
 
