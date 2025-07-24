@@ -74,6 +74,33 @@ def main():
     print("Saved to test_batch_corrupted.jpg...")
 
 
+    print("Let's now see how we would use a model to denoise the image with the Ambient Loss.")
+
+    def dummy_network_fn(x, sigma_t, *args, **kwargs):
+        return x
+
+    image_pred = dummy_network_fn(image_t, sigma_t)        
+    # bring this to the trust level
+    image_tn_pred = ambient.from_x0_pred_to_xnature_pred_ve_to_ve(image_pred, image_t, sigma_t, sigma_tn)
+
+
+    # this weighting is from the EDM paper.
+    sigma_data = 0.5
+    edm_weight = (sigma_data ** 2 + sigma_t ** 2) / (sigma_t ** 2 * sigma_data ** 2)
+    # this weighting is due to the change of the loss.
+    ambient_factor = sigma_t ** 4 / ((sigma_t ** 2 - sigma_tn ** 2) ** 2)
+    ambient_weight = edm_weight * ambient_factor
+    # loss computation
+    loss = ambient_weight[:, None, None, None] * ((image_tn_pred - image_tn) ** 2)
+
+    print("Average loss: ", loss.mean())
+
+
+
+
+
+
+
 
 
     
