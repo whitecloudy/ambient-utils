@@ -3,7 +3,7 @@
 <!-- markdownlint-disable no-duplicate-header -->
 
 <div align="center">
-  <img src="examples/example_image.jpg" width="60%" alt="Ambient Omni Logo" />
+  <img src="https://github.com/giannisdaras/ambient-utils/blob/main/examples/example_image.jpg?raw=true" width="60%" alt="Ambient Omni Logo" />
 </div>
 
 ## What is this about?

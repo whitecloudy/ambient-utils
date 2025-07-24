@@ -1,14 +1,17 @@
+from pathlib import Path
 import setuptools
 
-with open("README.md", "r") as fh:
+root = Path(__file__).parent.resolve()
+
+with open(root / "README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r") as f:
+with open(root / "requirements.txt", "r", encoding="utf-8") as f:
     requirements = [line.strip() for line in f.readlines()]
 
 setuptools.setup(
     name="ambient_utils",
-    version="0.0.1",
+    version="1.0.0",
     author="giannisdaras",
     author_email="daras.giannhs@gmail.com",
     description="Utility functions for learning generative models from corrupted data.",
@@ -19,10 +22,10 @@ setuptools.setup(
     install_requires=requirements,
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)", 
         "Operating System :: OS Independent",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Intended Audience :: Science/Research",
     ],
+    license="GPL-3.0",
     python_requires='>=3.6',
 )
