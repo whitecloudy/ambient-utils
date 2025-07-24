@@ -24,18 +24,6 @@ The code in this repository has been used in the following papers:
 
 Beyond the functionality directly related to training diffusion models with corrupted data, this repository also provides a wide range of functions that can be useful for day-to-day deep learning projects. 
 
-## How is this repository structured?
-
-* `datasets`: provides the `AmbientSampler`, a `torch.utils.data.Sampler` that allows for sampling different datapoints differently according to the strength of the corruption. This module also provides several utilities for working with ImageFolder datasets and WebDatasets.
-* `classifier`: related to the [Ambient Diffusion Omni](https://arxiv.org/abs/2506.10038) work. Useful for parallel predictions and annotations using a pre-trained noise-dependent classifier.
-* `diffusers`: provides useful functions for interoperability with the diffusers library. Used in the [Consistent Diffusion Meets Tweedie](https://arxiv.org/abs/2404.10177) work. Not under active development, please raise an issue if something is broken.
-* `dist`: provides several functions for distributed training. 
-* `eval`: provides implementations for Inception score and FID computation.
-* `loss`: provides implementations for loss functions that compute the conditional expectation of the clean distribution without having access to clean data. This idea is related to Noisier2Noise.
-* `url`: utility functions for working with URLs.
-* `noise`: commonly used synthetic corruptions on images.
-* `utils`: several other utility functions.
-
 
 ## What's a good place to start?
 
@@ -53,7 +41,8 @@ If you are too lazy to do that, here is a TLDR.
 
 
 It is pretty straightforward to use ideas for learning with bad data, add and integrate them into your existing standard diffusion codebase.
-Give or take, you will need to do 3 things.
+A standalone example is provided in the [`examples/test_ambient.py`](https://github.com/giannisdaras/ambient-utils/blob/main/examples/test_ambient.py) file.
+Give or take, you will need to do 4 things.
 
 ### 1. Prepare your data
 
@@ -160,3 +149,16 @@ ambient_weight = edm_weight * ambient_factor
 # loss computation
 loss = ambient_weight[:, None, None, None] * ((image_tn_pred - image_tn) ** 2)
 ```
+
+
+## How is this repository structured?
+
+* `datasets`: provides the `AmbientSampler`, a `torch.utils.data.Sampler` that allows for sampling different datapoints differently according to the strength of the corruption. This module also provides several utilities for working with ImageFolder datasets and WebDatasets.
+* `classifier`: related to the [Ambient Diffusion Omni](https://arxiv.org/abs/2506.10038) work. Useful for parallel predictions and annotations using a pre-trained noise-dependent classifier.
+* `diffusers`: provides useful functions for interoperability with the diffusers library. Used in the [Consistent Diffusion Meets Tweedie](https://arxiv.org/abs/2404.10177) work. Not under active development, please raise an issue if something is broken.
+* `dist`: provides several functions for distributed training. 
+* `eval`: provides implementations for Inception score and FID computation.
+* `loss`: provides implementations for loss functions that compute the conditional expectation of the clean distribution without having access to clean data. This idea is related to Noisier2Noise.
+* `url`: utility functions for working with URLs.
+* `noise`: commonly used synthetic corruptions on images.
+* `utils`: several other utility functions.
