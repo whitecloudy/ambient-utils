@@ -60,12 +60,12 @@ def main():
 
     print("Will now do an example training loop...")
     print("First, we extract the trust level.")
-    sigma_tn = torch.tensor([dataset.annotations[i.item()][0] for i in batch['idx']])
+    sigma_tn = torch.tensor([sampler.sampled_sigmas[i.item()]['sigma_min'] for i in batch['idx']])
     print("Next, we extract the noise level that we want to do the training for.")
-    sigma_t = torch.tensor([sampler.sampled_sigmas[i.item()] for i in batch['idx']])
+    sigma_t = torch.tensor([sampler.sampled_sigmas[i.item()]['sigma'] for i in batch['idx']])
     sigma_tn = torch.where(sigma_tn > sigma_t, torch.zeros_like(sigma_tn), sigma_tn) # make sure we ground truth version we have for the sample is at less noise.
     print("Let's noise the image to the trust level.")
-    image_tn = batch['image'] + batch['noise'] * sigma_tn[:, None, None, None] # corrupt the image to the noise level that we can trust them.
+    image_tn = batch['image'] + batch.get('noise', torch.zeros_like(batch['image'])) * sigma_tn[:, None, None, None] # corrupt the image to the noise level that we can trust them.
     print("Let's now further noise the image to the level we want to do the training for.")
     image_t = image_tn + torch.randn_like(batch['image']) * torch.sqrt(sigma_t[:, None, None, None] ** 2 - sigma_tn[:, None, None, None] ** 2) # add noise to the image to the noise level that we want to do the training for.
 

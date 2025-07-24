@@ -288,7 +288,11 @@ class AmbientSampler(torch.utils.data.Sampler):
                 sample_sigma_max = sample_annotation[1]
 
                 if (sigma > sample_sigma_min*self.buffer_factor) or (sigma < sample_sigma_max):
-                    self.sampled_sigmas[order[i]] = sigma
+                    self.sampled_sigmas[order[i]] = {
+                        "sigma": sigma,
+                        "sigma_min": sample_sigma_min,
+                        "sigma_max": sample_sigma_max,
+                    }
                     yield order[i]
                     number_of_yields += 1
                     sigma = self.scheduler()
