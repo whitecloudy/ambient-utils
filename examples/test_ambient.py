@@ -6,8 +6,6 @@ import torch
 def main():
     print("Creating a dataset from an image folder...")
 
-
-
     dataset = ambient.ImageFolderDataset(
         path="image_folder",
         only_positive=False, # images will be in [-1, 1]
@@ -94,29 +92,6 @@ def main():
     loss = ambient_weight[:, None, None, None] * ((image_tn_pred - image_tn) ** 2)
 
     print("Average loss: ", loss.mean())
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-        
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
