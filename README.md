@@ -177,3 +177,28 @@ loss = ambient_weight[:, None, None, None] * ((image_tn_pred - image_tn) ** 2)
 * `url`: utility functions for working with URLs.
 * `noise`: commonly used synthetic corruptions on images.
 * `utils`: several other utility functions.
+
+## Maintainers 👥
+
+**Authors:**
+- Giannis Daras (Postdoctoral Researcher, MIT)
+- Adrian Rodriguez-Munoz (Ph.D. Student, MIT)
+
+**Correspondence:** gdaras [at] mit [dot] edu
+
+## Acknowledgements 🙏
+
+We thank the authors of the [EDM repository](https://github.com/NVlabs/edm) for providing usable code blocks that we use in this repo.
+
+## Citation 📚
+
+If you use this package in your research, please consider citing the Ambient Omni paper:
+
+```bibtex
+@article{daras2024ambient,
+  title={Ambient Diffusion Omni: Training Good Models with Bad Data},
+  author={Daras, Giannis and Rodriguez-Munoz, Adrian and Klivans, Adam and Torralba, Antonio and Daskalakis, Constantinos},
+  journal={arXiv preprint arXiv:2506.10038},
+  year={2024}
+}
+```
