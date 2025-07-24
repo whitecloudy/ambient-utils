@@ -165,11 +165,11 @@ class Dataset(torch.utils.data.Dataset):
         return {
             "image": image.copy(),
             "label": self.get_label(idx),
-            "raw_idx": raw_idx,
-            "idx": idx,
+            "raw_idx": raw_idx,  # index to the original data that might have been subsampled
+            "idx": idx,  # index to the actual data being used in the dataset
             # this fixes a noise realization per image in the dataset. It is useful for ambient training, but can be ignored otherwise.
             "noise": np.random.randn(*image.shape),
-            "filename": self._image_fnames[raw_idx],
+            "filename": self._image_fnames[raw_idx],  # filename of the original data
             **self.get_other_keys(raw_idx),
         }
 
