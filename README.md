@@ -96,6 +96,8 @@ As mentioned, each imperfect sample can only be used for a subset of the diffusi
 Here is a very easy example on how to use this: 
 
 ```python
+import ambient_utils as ambient
+
 def scheduler_fn():
     """Return a random sigma value for the diffusion process."""
     rnd_normal = np.random.normal(0, 1)
@@ -151,6 +153,8 @@ If you want to understand more about this idea, read the work [Consistent Diffus
 
 
 ```python
+import ambient_utils as ambient
+
 image_pred = dummy_network_fn(image_t, sigma_t)        
 # bring this to the trust level
 image_tn_pred = ambient.from_x0_pred_to_xnature_pred_ve_to_ve(image_pred, image_t, sigma_t, sigma_tn)
