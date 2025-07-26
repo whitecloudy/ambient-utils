@@ -61,7 +61,7 @@ class Dataset(torch.utils.data.Dataset):
         random_seed = 0,        # Random seed to use when applying max_size.
         cache       = False,    # Cache images in CPU memory?
         normalize=True,
-        only_positive=True,  # whether to return images in [0, 1] or [-1, 1]
+        only_positive=False,  # whether to return images in [0, 1] or [-1, 1]
         use_other_keys = False, # Load additional keys from dataset.json?
     ):
         self._name = name
