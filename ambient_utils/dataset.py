@@ -58,6 +58,7 @@ class Dataset(torch.utils.data.Dataset):
         raw_shape,              # Shape of the raw image data (NCHW).
         max_size    = None,     # Artificially limit the size of the dataset. None = no limit.
         use_labels  = False,    # Enable conditioning labels? False = label dimension is zero.
+        xflip       = False,    # Artificially double the size of the dataset via x-flips. Applied after max_size.
         random_seed = 0,        # Random seed to use when applying max_size.
         cache       = False,    # Cache images in CPU memory?
         normalize=True,
@@ -80,6 +81,12 @@ class Dataset(torch.utils.data.Dataset):
         if (max_size is not None) and (self._raw_idx.size > max_size):
             np.random.RandomState(random_seed % (1 << 31)).shuffle(self._raw_idx)
             self._raw_idx = np.sort(self._raw_idx[:max_size])
+
+        # Apply xflip.
+        self._xflip = np.zeros(self._raw_idx.size, dtype=np.uint8)
+        if xflip:
+            self._raw_idx = np.tile(self._raw_idx, 2)
+            self._xflip = np.concatenate([self._xflip, np.ones_like(self._xflip)])
         
         self.annotations = {}  # {filename: (sigma_min, sigma_max), ...}
 
@@ -428,6 +435,40 @@ class ImageFolderDataset(Dataset):
         if self._use_other_keys:
             return getattr(self, '_other_keys_data', None)
         return None
+    
+
+class GaussianNoiseAdditiveCorruptedImageFolderDataset(ImageFolderDataset):
+    def __init__(self, sigma: float = 0.1,
+                 corruption_probability_per_image: float = 0.5, 
+                 corruption_probability_per_pixel: float = 1.0,
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.corruption_probability_per_image = corruption_probability_per_image
+        self.corruption_probability_per_pixel = corruption_probability_per_pixel
+        self.sigma = sigma
+
+
+    def __getitem__(self, idx):
+        item = super().__getitem__(idx)
+        image = item["image"]
+        item["original_image"] = image.copy()
+        noise = item["noise"]
+        
+        # fix seed to idx, add random number to avoid with dataset class
+        np.random.seed(idx+112154)
+        torch.manual_seed(idx+445481)
+
+        if np.random.random() < self.corruption_probability_per_image:
+            item["corruption_label"] = 1
+            # pick one of the corruptions
+            mask = (torch.rand(image.shape[1:]) < self.corruption_probability_per_pixel).unsqueeze(0).repeat(image.shape[0], 1, 1)
+
+            item["image"] = image + mask.numpy() * noise * self.sigma
+            item["sigma"] = self.sigma
+        else:
+            item["corruption_label"] = 0
+            item["sigma"] = 0.0
+        return item
 
 
 class SyntheticallyCorruptedImageFolderDataset(ImageFolderDataset):
