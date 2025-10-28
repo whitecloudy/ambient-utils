@@ -441,11 +441,15 @@ class GaussianNoiseAdditiveCorruptedImageFolderDataset(ImageFolderDataset):
     def __init__(self, sigma: float = 0.1,
                  corruption_probability_per_image: float = 0.5, 
                  corruption_probability_per_pixel: float = 1.0,
+                 image_corruption_seed = 112154,
+                 image_noise_seed = 445481,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.corruption_probability_per_image = corruption_probability_per_image
         self.corruption_probability_per_pixel = corruption_probability_per_pixel
         self.sigma = sigma
+        self.image_corruption_seed = image_corruption_seed
+        self.image_noise_seed = image_noise_seed
 
 
     def __getitem__(self, idx):
@@ -454,14 +458,14 @@ class GaussianNoiseAdditiveCorruptedImageFolderDataset(ImageFolderDataset):
         item["original_image"] = image.copy()
         noise = item["noise"]
         # fix seed to idx, add random number to avoid with dataset class
-        np.random.seed(idx+112154)
-        torch.manual_seed(idx+445481)
+        np_gen = np.random.default_rng(idx+self.image_corruption_seed)
+        torch_gen = torch.Generator()
+        torch_gen.manual_seed(idx+self.image_noise_seed)
 
-
-        if np.random.random() < self.corruption_probability_per_image:
+        if np_gen.random() < self.corruption_probability_per_image:
             item["corruption_label"] = 1
             # pick one of the corruptions
-            mask = (torch.rand(image.shape[1:]) < self.corruption_probability_per_pixel).unsqueeze(0).repeat(image.shape[0], 1, 1)
+            mask = (torch.rand(image.shape[1:], generator=torch_gen) < self.corruption_probability_per_pixel).unsqueeze(0).repeat(image.shape[0], 1, 1)
 
             item["image"] = image + (mask.numpy() * noise * self.sigma).astype(image.dtype)
             item["sigma"] = self.sigma
