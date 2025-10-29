@@ -39,7 +39,7 @@ extras_require = {
 
 setuptools.setup(
     name="ambient_utils",
-    version="1.0.4",
+    version="1.1.0",
     author="giannisdaras",
     author_email="daras.giannhs@gmail.com",
     description="Utility functions for learning generative models from corrupted data.",

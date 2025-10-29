@@ -458,9 +458,9 @@ class GaussianNoiseAdditiveCorruptedImageFolderDataset(ImageFolderDataset):
         item["original_image"] = image.copy()
         noise = item["noise"]
         # fix seed to idx, add random number to avoid with dataset class
-        np_gen = np.random.default_rng(idx+self.image_corruption_seed)
+        np_gen = np.random.default_rng(int(idx+self.image_corruption_seed))
         torch_gen = torch.Generator()
-        torch_gen.manual_seed(idx+self.image_noise_seed)
+        torch_gen.manual_seed(int(idx+self.image_noise_seed))
 
         if np_gen.random() < self.corruption_probability_per_image:
             item["corruption_label"] = 1
